@@ -8,6 +8,7 @@ RUN npm ci --production=false
 
 # Copy source and build
 COPY . .
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 RUN npm run build
 
 # ── Stage 2: Serve with Nginx ──
