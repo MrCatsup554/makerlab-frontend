@@ -52,6 +52,16 @@ export default function Header({ onNavigate, currentPage }) {
             {t.disenos}
           </button>
 
+          <button
+            className={`text-sm font-medium transition ${currentPage === 'materials'
+                ? 'text-blue-600'
+                : 'text-gray-700 hover:text-gray-900'
+              }`}
+            onClick={() => onNavigate?.('materials')}
+          >
+            Materiales
+          </button>
+
           {/* 2. LA PUERTA SECRETA: Solo aparece para el admin */}
           {isAdmin && (
             <button
@@ -67,7 +77,7 @@ export default function Header({ onNavigate, currentPage }) {
           )}
 
           <div className="h-6 w-px bg-gray-200"></div>
-          <OrderHistory />
+          <OrderHistory onNavigate={onNavigate} />
 
           {/* Language Selector */}
           <select

@@ -5,6 +5,7 @@ import MainMenu from './pages/MainMenu';
 import Upload from './pages/Upload';
 import Designs from './pages/Designs';
 import AdminDashboard from './pages/AdminDashboard'; 
+import Materials from './pages/Materials';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,16 +16,25 @@ function App() {
     const token = localStorage.getItem('token');
     const userString = localStorage.getItem('user');
 
-    if (token && userString) {
-      const user = JSON.parse(userString); // Convertimos el texto guardado a objeto
-      setIsAuthenticated(true);   
-      
-      // ¡Aquí está la magia al recargar!
-      if (user.role === 'admin') {
-        setCurrentPage('admin');
-      } else {
-        setCurrentPage('mainmenu');
+    if (token && userString && userString !== 'undefined') {
+      try {
+        const user = JSON.parse(userString); // Convertimos el texto guardado a objeto
+        setIsAuthenticated(true);   
+        
+        // ¡Aquí está la magia al recargar!
+        if (user.role === 'admin') {
+          setCurrentPage('admin');
+        } else {
+          setCurrentPage('mainmenu');
+        }
+      } catch (e) {
+        console.error("Error parsing user from localStorage", e);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
       }
+    } else {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
   }, []); 
 
@@ -58,6 +68,7 @@ function App() {
         {currentPage === 'upload' && isAuthenticated && <Upload onNavigate={handleNavigate} />}
         {currentPage === 'designs' && <Designs onNavigate={handleNavigate} />}
         {currentPage === 'admin' && isAuthenticated && <AdminDashboard onNavigate={handleNavigate} />}
+        {currentPage === 'materials' && <Materials onNavigate={handleNavigate} />}
       </div>
     </LanguageProvider>
   );

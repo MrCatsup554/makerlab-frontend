@@ -120,6 +120,11 @@ export default function OrderHistory({ onNavigate }) {
     t.entregado || 'Entregado',
   ];
 
+  const parseMaterialFromNotes = (notes = '') => {
+    const match = notes.match(/material:\s*(.+)/i);
+    return match ? match[1].trim() : '';
+  };
+
   const getOrderName = (order) => {
     if (order.items && order.items.length > 0) {
       return order.items[0].piece_name || order.end_use || 'Sin nombre';
@@ -130,7 +135,7 @@ export default function OrderHistory({ onNavigate }) {
   const getMaterial = (order) => {
     if (order.items && order.items.length > 0) {
       const item = order.items[0];
-      const mat = item.material?.name || '';
+      const mat = item.material?.name || parseMaterialFromNotes(item.item_notes);
       const color = item.preferred_color || item.color?.name || '';
       return [mat, color].filter(Boolean).join(' ') || '—';
     }

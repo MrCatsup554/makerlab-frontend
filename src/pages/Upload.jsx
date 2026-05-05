@@ -122,6 +122,26 @@ export default function Upload({ onNavigate }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
+  // ── NEW FEATURE: Dynamic Materials from API ──
+  const [apiMaterials, setApiMaterials] = useState([]);
+  const [materialsLoaded, setMaterialsLoaded] = useState(false);
+
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      try {
+        const res = await api.get('/materials');
+        const materials = res.data;
+        if (Array.isArray(materials) && materials.length > 0) {
+          setApiMaterials(materials);
+          setMaterialsLoaded(true);
+        }
+      } catch (err) {
+        console.log('Materials API not available, using defaults.');
+      }
+    };
+    fetchMaterials();
+  }, []);
+
   useEffect(() => {
     const userString = localStorage.getItem('user');
     if (userString) {
@@ -507,12 +527,22 @@ export default function Upload({ onNavigate }) {
             <select value={formData.material} onChange={(e) => handleInputChange('material', e.target.value)}
               className={`w-full mt-2 mb-1 px-4 py-3 bg-white rounded-xl border focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all ${formErrors.material ? 'border-red-500' : 'border-gray-200 hover:border-purple-400 shadow-sm'}`}>
               <option value="">Selecciona un material</option>
+              {materialsLoaded ? (
+                apiMaterials.filter(m => m.is_active).map(m => (
+                  <option key={m.id} value={m.name} title={m.description}>
+                    {m.name}{m.category ? ` (${m.category})` : ''} — ${m.price_per_gram}/g
+                  </option>
+                ))
+              ) : (
+                <>
               <option value="PLA">PLA</option>
               <option value="PLA+">PLA+</option>
               <option value="ABS">ABS</option>
               <option value="PETG">PETG</option>
               <option value="Resina Estándar">Resina</option>
               <option value="TPU Flexible">TPU Flexible</option>
+                </>
+              )}
             </select>
             {formErrors.material && <p className="text-red-500 text-[10px] font-bold mt-1 ml-1">{formErrors.material}</p>}
             {!formErrors.material && <div className="h-5 mb-4"></div>}

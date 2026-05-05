@@ -1,16 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import Header from '../components/Header';
-import { FiX, FiDownload, FiInfo, FiPlay, FiCheckCircle, FiPackage, FiDollarSign } from 'react-icons/fi';
+import { FiX, FiDownload, FiInfo, FiPlay, FiCheckCircle, FiPackage, FiDollarSign, FiTrendingUp, FiActivity, FiClock, FiBarChart2 } from 'react-icons/fi';
 
 export default function AdminDashboard({ onNavigate }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
+  // ── NEW FEATURE: Admin Dashboard Statistics ──
+  const [stats, setStats] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [showActivity, setShowActivity] = useState(false);
+
   useEffect(() => {
     fetchOrders();
+    fetchStats();
   }, []);
+
+  // ── Stats fetcher ──
+  const fetchStats = async () => {
+    try {
+      const [summaryRes, activityRes] = await Promise.all([
+        api.get('/stats/summary'),
+        api.get('/stats/recent-activity')
+      ]);
+      setStats(summaryRes.data);
+      setRecentActivity(activityRes.data || []);
+    } catch (err) {
+      console.log('Stats API not available:', err.message);
+    }
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -79,6 +99,87 @@ export default function AdminDashboard({ onNavigate }) {
       
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-black text-slate-800 mb-8">Gestión de Taller</h1>
+
+        {/* ── NEW FEATURE: Stats Summary Cards ── */}
+        {stats && (
+          <div className="mb-8 animate-fadeIn">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              {/* Total Orders */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="bg-blue-50 text-blue-600 p-2.5 rounded-xl"><FiBarChart2 size={20} /></div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</span>
+                </div>
+                <p className="text-3xl font-black text-slate-900">{stats.total_orders}</p>
+                <p className="text-xs text-slate-500 mt-1">Pedidos registrados</p>
+              </div>
+              {/* Revenue */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="bg-green-50 text-green-600 p-2.5 rounded-xl"><FiTrendingUp size={20} /></div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ingresos</span>
+                </div>
+                <p className="text-3xl font-black text-slate-900">${stats.total_revenue?.toLocaleString('es-MX')}</p>
+                <p className="text-xs text-slate-500 mt-1">MXN recaudados</p>
+              </div>
+              {/* Orders by Status */}
+              {stats.orders_by_status && Object.entries(stats.orders_by_status).slice(0, 2).map(([status, count]) => (
+                <div key={status} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`p-2.5 rounded-xl ${
+                      status === 'solicitado' ? 'bg-amber-50 text-amber-600' :
+                      status === 'cotizado' ? 'bg-blue-50 text-blue-600' :
+                      status === 'aceptado' ? 'bg-indigo-50 text-indigo-600' :
+                      status === 'en_produccion' ? 'bg-purple-50 text-purple-600' :
+                      status === 'listo' ? 'bg-green-50 text-green-600' :
+                      status === 'entregado' ? 'bg-slate-100 text-slate-600' :
+                      'bg-gray-50 text-gray-600'
+                    }`}><FiActivity size={20} /></div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{status.replace('_', ' ')}</span>
+                  </div>
+                  <p className="text-3xl font-black text-slate-900">{count}</p>
+                  <p className="text-xs text-slate-500 mt-1">pedidos</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent Activity Toggle */}
+            <button
+              onClick={() => setShowActivity(!showActivity)}
+              className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors mb-4"
+            >
+              <FiClock size={16} />
+              {showActivity ? 'Ocultar actividad reciente' : 'Ver actividad reciente'}
+            </button>
+
+            {/* Recent Activity Timeline */}
+            {showActivity && recentActivity.length > 0 && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6 animate-fadeIn">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Actividad Reciente</h3>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {recentActivity.slice(0, 10).map(log => (
+                    <div key={log.id} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                      <div className="mt-0.5 w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-700">
+                          <span className="font-bold text-slate-900">{log.ticket}</span>
+                          {' '}
+                          <span className="px-1.5 py-0.5 bg-red-50 text-red-600 rounded text-[10px] font-bold">{log.old_status || 'nuevo'}</span>
+                          {' → '}
+                          <span className="px-1.5 py-0.5 bg-green-50 text-green-600 rounded text-[10px] font-bold">{log.new_status}</span>
+                        </p>
+                        {log.note && <p className="text-xs text-slate-500 mt-1 truncate">{log.note}</p>}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                        {new Date(log.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-20">

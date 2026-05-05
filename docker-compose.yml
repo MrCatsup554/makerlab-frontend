@@ -1,0 +1,46 @@
+services:
+  # ── Frontend (React + Nginx) ──
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: makerlab-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - makerlab-net
+
+  # ── Backend (.NET 10 API) ──
+  backend:
+    build:
+      context: ../makerlab-backend
+      dockerfile: Dockerfile
+    container_name: makerlab-backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Jwt__Key=${JWT_KEY:-MakerLabSuperSecretKeyThatIsAtLeast32CharsLong!!}
+      - Jwt__Issuer=${JWT_ISSUER:-MakerLab}
+      - Jwt__Audience=${JWT_AUDIENCE:-MakerLabFrontend}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://206.189.198.45}
+      # Limit .NET memory usage for 512MB Droplet
+      - DOTNET_GCHeapHardLimit=0xA000000
+    volumes:
+      - db-data:/app/data
+    restart: unless-stopped
+    networks:
+      - makerlab-net
+    # No external ports — only accessible through Nginx proxy
+    expose:
+      - "8000"
+
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  makerlab-net:
+    driver: bridge
