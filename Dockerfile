@@ -1,5 +1,5 @@
 # ── Stage 1: Build ──
-FROM node:22-alpine AS build
+FROM node:22-alpine AS frontend-build
 WORKDIR /app
 
 # Copy package files first (layer caching)
@@ -21,7 +21,7 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built files
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=frontend-build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
